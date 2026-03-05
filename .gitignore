@@ -1,5 +1,7 @@
-Library/
-Temp/
-Obj/
-Logs/
-UserSettings/
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+*.meta
+Thumbs.db
+.DS_Store
