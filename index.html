@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+  />
+  <meta name="theme-color" content="#0f0a14" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title data-i18n="app.title">Match-3 — Mobil</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="main-menu.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body class="is-menu-open">
+  <!-- Dış kabuk: tam ekran + safe-area ile çentik/ev dizaynından kaçınma -->
+  <div class="app-root">
+    <div class="safe-chrome">
+      <!-- 9:16 oranı sabitlenmiş oyun alanı -->
+      <main class="frame-9x16" id="gameShell">
+        <header class="top-bar">
+          <h1 class="title" data-i18n="app.heading">Match-3</h1>
+          <div class="hud">
+            <span><span data-i18n="hud.score">Skor</span> <strong id="score">0</strong></span>
+            <span><span data-i18n="hud.moves">Hamle</span> <strong id="moves">30</strong></span>
+            <span><span data-i18n="hud.level">Seviye</span> <strong id="level">1</strong></span>
+            <span><span data-i18n="hud.target">Hedef</span> <strong id="target">1000</strong></span>
+            <div id="missionHud" class="mission-hud" aria-live="polite">
+              <div class="mission-main">
+                <span class="mission-label" data-i18n="mission.target">Target</span>
+                <img id="missionIconImg" class="mission-icon-img" alt="" hidden />
+                <span id="missionIcon" class="mission-icon" aria-hidden="true">🍎</span>
+                <strong id="missionValue" class="mission-value">15 / 15</strong>
+                <span id="missionCompleteBadge" class="mission-complete-badge" aria-hidden="true" data-i18n="mission.complete">Complete ✓</span>
+              </div>
+              <div id="missionStartToast" class="mission-start-toast" aria-hidden="true"></div>
+            </div>
+            <button type="button" id="newGame" class="btn-new" data-i18n="hud.newGame">Yeni</button>
+            <button type="button" id="menuBtn" class="btn-new btn-menu" data-i18n="hud.menu">Menü</button>
+          </div>
+        </header>
+        <div class="canvas-wrap">
+          <div id="globalLanguageSlot" class="global-language-slot"></div>
+          <canvas
+            id="board"
+            width="720"
+            height="1280"
+            style="image-rendering: auto;"
+            aria-label="Oyun tahtası"
+            data-i18n-attr="aria-label:board.ariaLabel"
+          ></canvas>
+          <div id="mainMenu" class="main-menu" aria-hidden="false">
+            <div class="main-menu__content">
+              <h2 class="main-menu__title" data-i18n="app.heading">Match-3</h2>
+              <button type="button" id="playButton" class="main-menu__play" data-i18n="menu.play">OYNA</button>
+              <button type="button" id="continueButton" class="main-menu__continue" data-i18n="menu.continue" hidden>DEVAM ET</button>
+              <button type="button" id="saveNowButton" class="main-menu__save" data-i18n="menu.saveNow" disabled>ŞİMDİ KAYDET</button>
+              <button type="button" id="saveSlotsOpen" class="main-menu__manage" data-i18n="menu.manageSaves">KAYITLAR</button>
+            </div>
+            <div id="saveSlotsPanel" class="save-slots-panel" aria-hidden="true">
+              <div class="save-slots-panel__head">
+                <button type="button" id="saveSlotsBack" class="save-slots-back" data-i18n="menu.back">GERİ</button>
+              </div>
+              <section id="saveSlots" class="save-slots" aria-live="polite"></section>
+            </div>
+            <div id="slotDeleteConfirm" class="menu-confirm" aria-hidden="true">
+              <div class="menu-confirm__dialog" role="dialog" aria-modal="true" aria-labelledby="slotDeleteConfirmTitle">
+                <h3 id="slotDeleteConfirmTitle" class="menu-confirm__title" data-i18n="menu.confirmDeleteTitle">Delete slot?</h3>
+                <p id="slotDeleteConfirmText" class="menu-confirm__text">Delete this slot?</p>
+                <div class="menu-confirm__actions">
+                  <button type="button" id="slotDeleteCancel" class="menu-confirm__btn" data-i18n="menu.confirmNo">Cancel</button>
+                  <button type="button" id="slotDeleteAccept" class="menu-confirm__btn is-danger" data-i18n="menu.confirmYes">Delete</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            id="gameOverLayer"
+            class="game-over-layer"
+            hidden
+            aria-hidden="true"
+          >
+            <div class="go-panel">
+              <h2 class="go-title" data-i18n="gameOver.title">Oyun Bitti</h2>
+              <p class="go-line"><span data-i18n="gameOver.score">Skorun</span>: <strong data-go-score>0</strong></p>
+              <p class="go-line"><span data-i18n="gameOver.level">Seviye</span>: <strong data-go-level>1</strong></p>
+              <p class="go-line">
+                <span data-i18n="gameOver.highScore">En yüksek skor</span>: <strong data-go-high>0</strong>
+              </p>
+              <button type="button" class="btn-new go-restart" data-go-restart data-i18n="gameOver.restart">
+                Tekrar oyna
+              </button>
+              <button type="button" class="btn-new go-menu" data-go-menu data-i18n="gameOver.mainMenu">
+                Ana Menü
+              </button>
+              <p class="go-hint" data-i18n="gameOver.tapHint">Devam için ekrana dokun</p>
+            </div>
+          </div>
+          <div id="levelUpToast" class="level-up-toast" aria-hidden="true" data-i18n="fx.levelUp">LEVEL UP!</div>
+          <div id="comboToast" class="combo-toast" aria-hidden="true"></div>
+          <div id="shuffleToast" class="shuffle-toast" aria-hidden="true" data-i18n="fx.shuffle">SHUFFLE!</div>
+          <div id="savedToast" class="saved-toast" aria-hidden="true" data-i18n="fx.saved">KAYDEDİLDİ</div>
+        </div>
+        <p class="hint" data-i18n="hint.controls">
+          Dokunuş: komşu hücreye sürükle. Fare: iki komşu hücreye tıkla.
+        </p>
+      </main>
+    </div>
+  </div>
+  <script defer src="src/core/i18n/lang/en.js"></script>
+  <script defer src="src/core/i18n/lang/tr.js"></script>
+  <script defer src="src/core/i18n/lang/fr.js"></script>
+  <script defer src="src/core/i18n/lang/de.js"></script>
+  <script defer src="src/core/i18n/lang/ru.js"></script>
+  <script defer src="src/core/i18n/lang/it.js"></script>
+  <script defer src="src/core/i18n/lang/hi.js"></script>
+  <script defer src="src/core/i18n/lang/es.js"></script>
+  <script defer src="src/core/i18n/lang/pt.js"></script>
+  <script defer src="src/core/i18n/lang/ja.js"></script>
+  <script defer src="src/core/i18n/translations.index.js"></script>
+  <script defer src="src/core/LanguageManager.js"></script>
+  <script defer src="src/core/SaveManager.js"></script>
+  <script defer src="src/core/GridManager.js"></script>
+  <script defer src="src/core/MatchLogic.js"></script>
+  <script defer src="src/core/gridMotion.js"></script>
+  <script defer src="src/core/AudioManager.js"></script>
+  <script defer src="src/core/ComboManager.js"></script>
+  <script defer src="src/core/HintManager.js"></script>
+  <script defer src="src/core/MissionManager.js"></script>
+  <script defer src="src/core/LevelProgression.js"></script>
+  <script defer src="https://unpkg.com/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script defer src="src/ui/rafLoop.js"></script>
+  <script defer src="src/ui/LanguageSelector.js"></script>
+  <script type="module" src="src/ui/BoardThreeView.mjs"></script>
+  <script defer src="src/ui/InputHandler.js"></script>
+  <script defer src="src/ui/MainMenuController.js"></script>
+  <script defer src="src/core/match3Debug.js"></script>
+  <script defer src="src/core/GameManager.js"></script>
+</body>
+</html>
